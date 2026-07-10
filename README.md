@@ -36,6 +36,11 @@ http://100.68.88.63:3100
 - ปุ่ม Refresh
 - ปุ่ม Start / Stop / Restart สำหรับ container ที่ชื่อ `mc-*`
 - Bind port เฉพาะ Tailscale IP ผ่าน Docker Compose
+- ส่งคำสั่ง Admin ผ่าน RCON ด้วย `rcon-cli`
+- เพิ่ม/แก้/ลบ command presets ผ่านเว็บ
+- แก้ค่า `server.properties` ผ่านเว็บ พร้อม backup ก่อน save
+- Re-world แบบ backup-first
+- Audit log สำหรับ action สำคัญ
 
 ### โครงสร้าง server ที่รองรับ
 
@@ -151,6 +156,66 @@ http://100.68.88.63:3100
 - `start` เพื่อเปิด container
 - `stop` เพื่อปิด container
 - `restart` เพื่อ restart container
+- `Admin Commands` เพื่อส่งคำสั่ง RCON หรือกด preset
+- `Command Presets` เพื่อจัดการคำสั่งลัด
+- `server.properties` เพื่อโหลด/แก้/บันทึก config และเลือก Save + Restart
+- `Re-world` เพื่อสร้างโลกใหม่ โดยต้องพิมพ์ชื่อ server เพื่อยืนยัน
+- `Audit Log` เพื่อดู action ล่าสุด
+
+### Admin Commands / RCON
+
+ระบบใช้คำสั่ง:
+
+```bash
+docker exec <mc-container> rcon-cli "<command>"
+```
+
+ตัวอย่างคำสั่ง:
+
+```text
+list
+save-all
+time set day
+weather clear
+say Server maintenance in 5 minutes
+```
+
+ข้อจำกัด:
+
+- รับคำสั่งบรรทัดเดียวเท่านั้น
+- จำกัดความยาว 240 ตัวอักษร
+- ไม่รับ shell command
+
+### server.properties editor
+
+ระบบอ่านไฟล์:
+
+```text
+/minecraft-server/<server-id>/data/server.properties
+```
+
+ก่อนบันทึกจะ backup เป็น:
+
+```text
+server.properties.bak-YYYY-MM-DDTHH-mm-ss-sssZ
+```
+
+ปุ่ม:
+
+- `Save` บันทึกไฟล์อย่างเดียว
+- `Save + Restart` บันทึกแล้ว restart server
+
+### Re-world
+
+ขั้นตอน:
+
+1. ส่ง `save-all`
+2. Stop container
+3. สร้าง folder `data/world-backups`
+4. ย้าย `data/world` ไปเป็น backup
+5. Start container เพื่อให้ server สร้าง world ใหม่
+
+Re-world จะไม่ลบ world แบบถาวรทันที แต่จะย้ายไป backup ก่อนเสมอ
 
 ถ้าเจอ `email rate limit exceeded` ให้ตั้ง password ให้ user ใน Supabase Dashboard แล้วใช้ช่อง password แทน Magic Link ได้ทันที
 
@@ -177,11 +242,10 @@ http://100.68.88.63:3100
 
 ฟีเจอร์ที่ควรทำต่อ:
 
-- RCON command console
-- Preset commands ที่เพิ่ม/ลบผ่านเว็บได้
-- `server.properties` editor พร้อม backup ก่อน save
-- Re-world แบบปลอดภัย: stop server -> backup world -> remove world -> start server
-- Audit log ว่าใครสั่ง action อะไร เวลาไหน
+- ปรับ UI properties editor ให้เลือก key เพิ่มเติมได้
+- Restore world จาก backup
+- Export/import command presets
+- กรอง Audit log ตาม server/user/action
 
 ---
 
@@ -215,6 +279,11 @@ http://100.68.88.63:3100
 - Refresh button
 - Start / Stop / Restart buttons for `mc-*` containers
 - Docker Compose binds the web port only to the Tailscale IP
+- Admin commands through RCON using `rcon-cli`
+- Web-managed command presets
+- `server.properties` editor with backup before save
+- Backup-first Re-world flow
+- Audit log for important actions
 
 ### Supported server layout
 
@@ -330,6 +399,66 @@ http://100.68.88.63:3100
 - `start` to start a container
 - `stop` to stop a container
 - `restart` to restart a container
+- `Admin Commands` to send RCON commands or run presets
+- `Command Presets` to manage shortcut commands
+- `server.properties` to load/edit/save config and optionally restart
+- `Re-world` to regenerate a world after typing the server id for confirmation
+- `Audit Log` to inspect recent actions
+
+### Admin Commands / RCON
+
+The system runs:
+
+```bash
+docker exec <mc-container> rcon-cli "<command>"
+```
+
+Example commands:
+
+```text
+list
+save-all
+time set day
+weather clear
+say Server maintenance in 5 minutes
+```
+
+Restrictions:
+
+- Single-line commands only
+- Maximum 240 characters
+- No raw shell commands
+
+### server.properties editor
+
+The system reads:
+
+```text
+/minecraft-server/<server-id>/data/server.properties
+```
+
+Before saving, it creates:
+
+```text
+server.properties.bak-YYYY-MM-DDTHH-mm-ss-sssZ
+```
+
+Buttons:
+
+- `Save` only writes the file
+- `Save + Restart` writes the file and restarts the server
+
+### Re-world
+
+Flow:
+
+1. Send `save-all`
+2. Stop the container
+3. Create `data/world-backups`
+4. Move `data/world` to a timestamped backup
+5. Start the container so Minecraft can generate a fresh world
+
+Re-world does not permanently delete the world immediately. It moves the old world to a backup first.
 
 If you see `email rate limit exceeded`, set a password for the user in the Supabase Dashboard and use password login instead of Magic Link.
 
@@ -356,8 +485,7 @@ The API is intentionally scoped:
 
 Suggested next features:
 
-- RCON command console
-- Web-managed command presets
-- `server.properties` editor with automatic backup
-- Safe Re-world flow: stop server -> backup world -> remove world -> start server
-- Audit log for server actions
+- Better properties UI for adding more keys
+- Restore world from backup
+- Export/import command presets
+- Audit log filtering by server/user/action

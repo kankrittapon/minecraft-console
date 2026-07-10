@@ -1,11 +1,16 @@
 import { execFile } from "node:child_process";
-import { readdir, stat } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const MINECRAFT_ROOT = process.env.MINECRAFT_ROOT ?? "/minecraft-server";
+const APP_DATA_DIR = process.env.APP_DATA_DIR ?? path.join(process.cwd(), "data");
+const PRESETS_PATH = path.join(APP_DATA_DIR, "command-presets.json");
+const AUDIT_PATH = path.join(APP_DATA_DIR, "audit.log");
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
+const SAFE_COMMAND_PATTERN = /^[^\r\n]{1,240}$/;
 
 export interface MinecraftServer {
   id: string;
@@ -21,6 +26,17 @@ export interface MinecraftServer {
   health: string | null;
   ports: string;
   createdAt: string | null;
+}
+
+export interface CommandPreset {
+  id: string;
+  label: string;
+  command: string;
+}
+
+export interface ServerProperties {
+  lines: Array<{ type: "comment" | "blank" | "property"; raw: string; key?: string; value?: string }>;
+  values: Record<string, string>;
 }
 
 interface DockerContainer {
@@ -41,6 +57,17 @@ const exists = async (targetPath: string) => {
   } catch {
     return false;
   }
+};
+
+const timestamp = () => new Date().toISOString().replace(/[:.]/g, "-");
+
+const ensureDataDir = async () => {
+  await mkdir(APP_DATA_DIR, { recursive: true });
+};
+
+export const appendAudit = async (entry: Record<string, unknown>) => {
+  await ensureDataDir();
+  await writeFile(AUDIT_PATH, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`, { flag: "a" });
 };
 
 const runDocker = async (args: string[]) => {
@@ -144,4 +171,126 @@ export const controlServer = async (serverId: string, action: "start" | "stop" |
 
   await runDocker([action, server.containerName]);
   return server.containerName;
+};
+
+const getServerOrThrow = async (serverId: string) => {
+  if (!SAFE_ID_PATTERN.test(serverId)) throw new Error("Invalid server id");
+  const servers = await listServers();
+  const server = servers.find((item) => item.id === serverId);
+  if (!server) throw new Error("Minecraft server was not found");
+  return server;
+};
+
+export const sendRconCommand = async (serverId: string, command: string) => {
+  if (!SAFE_COMMAND_PATTERN.test(command)) throw new Error("Command must be a single line and under 240 characters");
+  const server = await getServerOrThrow(serverId);
+  if (!server.containerName || !server.containerName.startsWith("mc-")) throw new Error("Minecraft container was not found");
+
+  const { stdout, stderr } = await execFileAsync("docker", ["exec", server.containerName, "rcon-cli", command], {
+    timeout: 15000,
+    maxBuffer: 1024 * 1024,
+  });
+  return { output: stdout.toString().trim() || stderr.toString().trim() || "Command sent", containerName: server.containerName };
+};
+
+const defaultPresets: CommandPreset[] = [
+  { id: "list", label: "List players", command: "list" },
+  { id: "save-all", label: "Save world", command: "save-all" },
+  { id: "day", label: "Set day", command: "time set day" },
+  { id: "clear-weather", label: "Clear weather", command: "weather clear" },
+  { id: "maintenance", label: "Maintenance notice", command: "say Server maintenance in 5 minutes" },
+];
+
+export const readPresets = async () => {
+  await ensureDataDir();
+  try {
+    const raw = await readFile(PRESETS_PATH, "utf8");
+    const parsed = JSON.parse(raw) as CommandPreset[];
+    return Array.isArray(parsed) ? parsed : defaultPresets;
+  } catch {
+    await writeFile(PRESETS_PATH, JSON.stringify(defaultPresets, null, 2));
+    return defaultPresets;
+  }
+};
+
+export const savePresets = async (presets: CommandPreset[]) => {
+  await ensureDataDir();
+  const safePresets = presets.map((preset) => ({
+    id: preset.id || randomUUID(),
+    label: preset.label.trim().slice(0, 80),
+    command: preset.command.trim().slice(0, 240),
+  })).filter((preset) => preset.label && SAFE_COMMAND_PATTERN.test(preset.command));
+  await writeFile(PRESETS_PATH, JSON.stringify(safePresets, null, 2));
+  return safePresets;
+};
+
+export const readAudit = async () => {
+  await ensureDataDir();
+  try {
+    const raw = await readFile(AUDIT_PATH, "utf8");
+    return raw.split("\n").filter(Boolean).slice(-100).reverse();
+  } catch {
+    return [];
+  }
+};
+
+const parseProperties = (raw: string): ServerProperties => {
+  const values: Record<string, string> = {};
+  const lines = raw.split(/\r?\n/).map((line) => {
+    if (!line.trim()) return { type: "blank" as const, raw: line };
+    if (line.trim().startsWith("#")) return { type: "comment" as const, raw: line };
+    const equalIndex = line.indexOf("=");
+    if (equalIndex < 0) return { type: "comment" as const, raw: line };
+    const key = line.slice(0, equalIndex);
+    const value = line.slice(equalIndex + 1);
+    values[key] = value;
+    return { type: "property" as const, raw: line, key, value };
+  });
+  return { lines, values };
+};
+
+export const readServerProperties = async (serverId: string) => {
+  const server = await getServerOrThrow(serverId);
+  if (!server.propertiesPath) throw new Error("server.properties was not found");
+  return parseProperties(await readFile(server.propertiesPath, "utf8"));
+};
+
+export const writeServerProperties = async (serverId: string, values: Record<string, string>) => {
+  const server = await getServerOrThrow(serverId);
+  if (!server.propertiesPath) throw new Error("server.properties was not found");
+  const parsed = parseProperties(await readFile(server.propertiesPath, "utf8"));
+  const backupPath = `${server.propertiesPath}.bak-${timestamp()}`;
+  await copyFile(server.propertiesPath, backupPath);
+
+  const seen = new Set<string>();
+  const nextLines = parsed.lines.map((line) => {
+    if (line.type !== "property" || !line.key) return line.raw;
+    seen.add(line.key);
+    return `${line.key}=${values[line.key] ?? line.value ?? ""}`;
+  });
+  Object.entries(values).forEach(([key, value]) => {
+    if (/^[a-zA-Z0-9_.-]+$/.test(key) && !seen.has(key)) nextLines.push(`${key}=${value}`);
+  });
+  await writeFile(server.propertiesPath, nextLines.join("\n"));
+  return backupPath;
+};
+
+export const reworldServer = async (serverId: string) => {
+  const server = await getServerOrThrow(serverId);
+  if (!server.containerName || !server.containerName.startsWith("mc-")) throw new Error("Minecraft container was not found");
+  if (!server.worldPath || !server.dataPath) throw new Error("World folder was not found");
+
+  if (server.state === "running") {
+    await sendRconCommand(serverId, "save-all").catch(() => null);
+    await runDocker(["stop", server.containerName]);
+  }
+  const backupRoot = path.join(server.dataPath, "world-backups");
+  await mkdir(backupRoot, { recursive: true });
+  const backupPath = path.join(backupRoot, `world-${timestamp()}`);
+  await rename(server.worldPath, backupPath);
+  if (await exists(server.worldPath)) {
+    await rm(server.worldPath, { recursive: true });
+  }
+  await runDocker(["start", server.containerName]);
+  return backupPath;
 };

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/app/lib/server-auth";
-import { controlServer } from "@/app/lib/minecraft";
+import { appendAudit, controlServer } from "@/app/lib/minecraft";
 
 export const runtime = "nodejs";
 
@@ -22,8 +22,10 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const containerName = await controlServer(id, action);
+    await appendAudit({ user: auth.email, serverId: id, action, containerName, ok: true });
     return NextResponse.json({ ok: true, containerName, action });
   } catch (error) {
+    await appendAudit({ user: auth.email, serverId: id, action, ok: false, error: String(error) });
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Action failed" }, { status: 500 });
   }
