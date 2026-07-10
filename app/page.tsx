@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
 const ALLOWED_EMAILS = (process.env.NEXT_PUBLIC_ALLOWED_EMAILS ?? process.env.NEXT_PUBLIC_ALLOWED_EMAIL ?? "")
   .split(",")
   .map((email) => email.trim().toLowerCase())
@@ -116,9 +115,10 @@ export default function MinecraftConsole() {
 
     setAuthBusy(true);
     setAuthMessage("");
+    const redirectTo = window.location.origin.replace(/\/$/, "");
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
-      options: { emailRedirectTo: SITE_URL || window.location.origin },
+      options: { emailRedirectTo: redirectTo },
     });
     setAuthBusy(false);
     setAuthMessage(error ? error.message : "ส่งลิงก์เข้าสู่ระบบไปที่อีเมลแล้ว");
