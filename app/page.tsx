@@ -313,7 +313,7 @@ export default function MinecraftConsole() {
 {`NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_ALLOWED_EMAILS=your@email.com
-NEXT_PUBLIC_SITE_URL=http://100.68.88.63:3100`}
+NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100`}
           </pre>
         </section>
       </main>
@@ -392,7 +392,7 @@ NEXT_PUBLIC_SITE_URL=http://100.68.88.63:3100`}
             <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Private Tailscale Server Console</p>
             <h1 className="mt-2 text-4xl font-black">Minecraft Console</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-300">
-              สแกน server ใต้ `/home/kanfullbuster/minecraft-server` และควบคุมเฉพาะ container ชื่อ `mc-*`
+              สแกน server ใต้ host Minecraft root ที่ mount เข้า container และควบคุมเฉพาะ container ชื่อ `mc-*`
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

@@ -17,13 +17,13 @@ This project is separate from the Audio Reader/Speechy project. It uses the same
 - แยกจากระบบ Audio Reader เดิม ไม่แตะ repo หรือ container ของ Reading
 - ใช้งานผ่าน Tailscale เท่านั้น
 - ใช้ Supabase Auth ชุดเดียวกับ Reading ได้
-- สแกน server ใต้ `/home/kanfullbuster/minecraft-server`
+- สแกน server ใต้ `<HOST_MINECRAFT_ROOT>`
 - ควบคุมเฉพาะ Docker container ที่ชื่อขึ้นต้นด้วย `mc-`
 
 URL ปัจจุบัน:
 
 ```text
-http://100.68.88.63:3100
+http://<TAILSCALE_IP>:3100
 ```
 
 ### ฟังก์ชั่นที่มีตอนนี้
@@ -47,17 +47,17 @@ http://100.68.88.63:3100
 ระบบจะสแกน folder ใต้:
 
 ```text
-/home/kanfullbuster/minecraft-server
+<HOST_MINECRAFT_ROOT>
 ```
 
 ตัวอย่าง:
 
 ```text
-/home/kanfullbuster/minecraft-server/superior
-/home/kanfullbuster/minecraft-server/superior/docker-compose.yml
-/home/kanfullbuster/minecraft-server/superior/data
-/home/kanfullbuster/minecraft-server/superior/data/world
-/home/kanfullbuster/minecraft-server/superior/data/server.properties
+<HOST_MINECRAFT_ROOT>/superior
+<HOST_MINECRAFT_ROOT>/superior/docker-compose.yml
+<HOST_MINECRAFT_ROOT>/superior/data
+<HOST_MINECRAFT_ROOT>/superior/data/world
+<HOST_MINECRAFT_ROOT>/superior/data/server.properties
 ```
 
 Container ควรตั้งชื่อเป็นรูปแบบ:
@@ -84,15 +84,15 @@ NEXT_PUBLIC_ALLOWED_EMAILS=your@email.com
 
 สำหรับ Supabase Auth URL Configuration:
 
-- `Site URL` คงไว้เป็นของโปรเจกต์หลักได้ เช่น `https://speechy.kankrittapon.online`
+- `Site URL` คงไว้เป็นของโปรเจกต์หลักได้ เช่น `<MAIN_SITE_URL>`
 - เพิ่ม Redirect URLs:
 
 ```text
-http://100.68.88.63:3100
-http://100.68.88.63:3100/*
+http://<TAILSCALE_IP>:3100
+http://<TAILSCALE_IP>:3100/*
 ```
 
-หมายเหตุ: แอปนี้ใช้ `window.location.origin` ตอนส่ง Magic Link ดังนั้นถ้าเปิดจาก `http://100.68.88.63:3100` ระบบจะขอ redirect กลับ URL นี้
+หมายเหตุ: แอปนี้ใช้ `window.location.origin` ตอนส่ง Magic Link ดังนั้นถ้าเปิดจาก `http://<TAILSCALE_IP>:3100` ระบบจะขอ redirect กลับ URL นี้
 
 ### Environment variables
 
@@ -102,9 +102,10 @@ http://100.68.88.63:3100/*
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_ALLOWED_EMAILS=your@email.com
-NEXT_PUBLIC_SITE_URL=http://100.68.88.63:3100
+NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100
 MINECRAFT_ROOT=/minecraft-server
-TAILSCALE_BIND_IP=100.68.88.63
+TAILSCALE_BIND_IP=<TAILSCALE_IP>
+HOST_MINECRAFT_ROOT=<HOST_MINECRAFT_ROOT>
 ```
 
 บน server ตอน deploy ด้วย Docker Compose:
@@ -113,7 +114,7 @@ TAILSCALE_BIND_IP=100.68.88.63
 - bind mount จาก host:
 
 ```text
-/home/kanfullbuster/minecraft-server:/minecraft-server:rw
+<HOST_MINECRAFT_ROOT>:/minecraft-server:rw
 ```
 
 ### Deploy
@@ -121,7 +122,7 @@ TAILSCALE_BIND_IP=100.68.88.63
 บน server:
 
 ```bash
-cd /home/kanfullbuster/minecraft-console
+cd <CONSOLE_PROJECT_DIR>
 docker compose up -d --build minecraft-console
 ```
 
@@ -134,7 +135,7 @@ docker ps --filter name=minecraft-console
 ตรวจว่าเว็บตอบ:
 
 ```bash
-curl -I http://100.68.88.63:3100
+curl -I http://<TAILSCALE_IP>:3100
 ```
 
 ### วิธีใช้งาน
@@ -142,7 +143,7 @@ curl -I http://100.68.88.63:3100
 1. เปิดเว็บผ่าน Tailscale:
 
 ```text
-http://100.68.88.63:3100
+http://<TAILSCALE_IP>:3100
 ```
 
 2. กรอกอีเมลที่อยู่ใน allowlist
@@ -383,13 +384,13 @@ Main goals:
 - Fully separate from the existing Audio Reader/Speechy project
 - Tailscale-only access
 - Reuse the same Supabase Auth project/env values as the Reading app
-- Discover servers under `/home/kanfullbuster/minecraft-server`
+- Discover servers under `<HOST_MINECRAFT_ROOT>`
 - Control only Docker containers whose names start with `mc-`
 
 Current URL:
 
 ```text
-http://100.68.88.63:3100
+http://<TAILSCALE_IP>:3100
 ```
 
 ### Current features
@@ -413,17 +414,17 @@ http://100.68.88.63:3100
 The console scans folders under:
 
 ```text
-/home/kanfullbuster/minecraft-server
+<HOST_MINECRAFT_ROOT>
 ```
 
 Example:
 
 ```text
-/home/kanfullbuster/minecraft-server/superior
-/home/kanfullbuster/minecraft-server/superior/docker-compose.yml
-/home/kanfullbuster/minecraft-server/superior/data
-/home/kanfullbuster/minecraft-server/superior/data/world
-/home/kanfullbuster/minecraft-server/superior/data/server.properties
+<HOST_MINECRAFT_ROOT>/superior
+<HOST_MINECRAFT_ROOT>/superior/docker-compose.yml
+<HOST_MINECRAFT_ROOT>/superior/data
+<HOST_MINECRAFT_ROOT>/superior/data/world
+<HOST_MINECRAFT_ROOT>/superior/data/server.properties
 ```
 
 Containers should be named:
@@ -450,15 +451,15 @@ NEXT_PUBLIC_ALLOWED_EMAILS=your@email.com
 
 In Supabase Auth URL Configuration:
 
-- Keep `Site URL` as the main app URL if needed, for example `https://speechy.kankrittapon.online`
+- Keep `Site URL` as the main app URL if needed, for example `<MAIN_SITE_URL>`
 - Add these Redirect URLs:
 
 ```text
-http://100.68.88.63:3100
-http://100.68.88.63:3100/*
+http://<TAILSCALE_IP>:3100
+http://<TAILSCALE_IP>:3100/*
 ```
 
-Note: this app uses `window.location.origin` when sending the Magic Link, so opening the app from `http://100.68.88.63:3100` requests a redirect back to that exact origin.
+Note: this app uses `window.location.origin` when sending the Magic Link, so opening the app from `http://<TAILSCALE_IP>:3100` requests a redirect back to that exact origin.
 
 ### Environment variables
 
@@ -468,9 +469,10 @@ Example `.env`:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_ALLOWED_EMAILS=your@email.com
-NEXT_PUBLIC_SITE_URL=http://100.68.88.63:3100
+NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100
 MINECRAFT_ROOT=/minecraft-server
-TAILSCALE_BIND_IP=100.68.88.63
+TAILSCALE_BIND_IP=<TAILSCALE_IP>
+HOST_MINECRAFT_ROOT=<HOST_MINECRAFT_ROOT>
 ```
 
 In Docker Compose:
@@ -479,7 +481,7 @@ In Docker Compose:
 - Host mount:
 
 ```text
-/home/kanfullbuster/minecraft-server:/minecraft-server:rw
+<HOST_MINECRAFT_ROOT>:/minecraft-server:rw
 ```
 
 ### Deploy
@@ -487,7 +489,7 @@ In Docker Compose:
 On the server:
 
 ```bash
-cd /home/kanfullbuster/minecraft-console
+cd <CONSOLE_PROJECT_DIR>
 docker compose up -d --build minecraft-console
 ```
 
@@ -500,7 +502,7 @@ docker ps --filter name=minecraft-console
 Check the HTTP response:
 
 ```bash
-curl -I http://100.68.88.63:3100
+curl -I http://<TAILSCALE_IP>:3100
 ```
 
 ### Usage
@@ -508,7 +510,7 @@ curl -I http://100.68.88.63:3100
 1. Open the app through Tailscale:
 
 ```text
-http://100.68.88.63:3100
+http://<TAILSCALE_IP>:3100
 ```
 
 2. Enter an allowlisted email address
