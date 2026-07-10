@@ -186,6 +186,129 @@ say Server maintenance in 5 minutes
 - จำกัดความยาว 240 ตัวอักษร
 - ไม่รับ shell command
 
+### คู่มือคำสั่งที่ใช้บ่อย
+
+คำสั่งทั้งหมดในช่อง Admin Commands คือคำสั่ง Minecraft/RCON ไม่ใช่คำสั่ง Linux shell
+
+สัญลักษณ์ที่ใช้ในตัวอย่าง:
+
+- `<player>` คือชื่อผู้เล่น เช่น `Steve`
+- `<message>` คือข้อความที่ต้องการประกาศ
+- `<amount>` คือจำนวน เช่น `64`
+- `<x> <y> <z>` คือพิกัดในโลก Minecraft
+
+คำสั่งดูสถานะ:
+
+```text
+list
+tps
+seed
+version
+```
+
+คำสั่งประกาศ/สื่อสาร:
+
+```text
+say <message>
+say Server maintenance in 5 minutes
+tell <player> <message>
+title <player> title {"text":"Welcome","color":"gold"}
+```
+
+คำสั่งบันทึก/ดูแล server:
+
+```text
+save-all
+save-off
+save-on
+stop
+```
+
+หมายเหตุ: แนะนำใช้ปุ่ม Stop ของเว็บแทนคำสั่ง `stop` เพราะเว็บจะรู้สถานะ container ต่อได้ชัดกว่า
+
+คำสั่งเวลา/สภาพอากาศ:
+
+```text
+time set day
+time set night
+weather clear
+weather rain
+weather thunder
+gamerule doDaylightCycle false
+gamerule doWeatherCycle false
+```
+
+คำสั่งผู้เล่น:
+
+```text
+op <player>
+deop <player>
+kick <player> <message>
+ban <player> <message>
+pardon <player>
+whitelist on
+whitelist off
+whitelist add <player>
+whitelist remove <player>
+whitelist reload
+```
+
+คำสั่ง teleport:
+
+```text
+tp <player> <targetPlayer>
+tp <player> <x> <y> <z>
+spawnpoint <player>
+setworldspawn
+setworldspawn <x> <y> <z>
+```
+
+คำสั่ง gameplay:
+
+```text
+gamemode survival <player>
+gamemode creative <player>
+difficulty peaceful
+difficulty easy
+difficulty normal
+difficulty hard
+effect clear <player>
+kill <player>
+```
+
+คำสั่ง item/xp:
+
+```text
+give <player> minecraft:diamond <amount>
+give <player> minecraft:bread 16
+xp add <player> 10 levels
+clear <player>
+```
+
+คำสั่งที่เหมาะทำเป็น preset:
+
+```text
+list
+save-all
+time set day
+weather clear
+say Server maintenance in 5 minutes
+whitelist reload
+gamerule keepInventory true
+```
+
+คำสั่งที่ควรระวัง:
+
+```text
+stop
+kill <player>
+ban <player>
+clear <player>
+gamerule randomTickSpeed <number>
+```
+
+ก่อนใช้คำสั่งที่กระทบผู้เล่นหรือโลก ควรส่ง `save-all` ก่อนเสมอ
+
 ### server.properties editor
 
 ระบบอ่านไฟล์:
@@ -428,6 +551,129 @@ Restrictions:
 - Single-line commands only
 - Maximum 240 characters
 - No raw shell commands
+
+### Common command guide
+
+Commands entered in Admin Commands are Minecraft/RCON commands, not Linux shell commands.
+
+Placeholders used below:
+
+- `<player>` means a player name, for example `Steve`
+- `<message>` means the message to send
+- `<amount>` means a number, for example `64`
+- `<x> <y> <z>` means Minecraft world coordinates
+
+Status commands:
+
+```text
+list
+tps
+seed
+version
+```
+
+Announcement/chat commands:
+
+```text
+say <message>
+say Server maintenance in 5 minutes
+tell <player> <message>
+title <player> title {"text":"Welcome","color":"gold"}
+```
+
+Server maintenance commands:
+
+```text
+save-all
+save-off
+save-on
+stop
+```
+
+Note: prefer the web Stop button over the `stop` command so the console can track container state more clearly.
+
+Time/weather commands:
+
+```text
+time set day
+time set night
+weather clear
+weather rain
+weather thunder
+gamerule doDaylightCycle false
+gamerule doWeatherCycle false
+```
+
+Player commands:
+
+```text
+op <player>
+deop <player>
+kick <player> <message>
+ban <player> <message>
+pardon <player>
+whitelist on
+whitelist off
+whitelist add <player>
+whitelist remove <player>
+whitelist reload
+```
+
+Teleport commands:
+
+```text
+tp <player> <targetPlayer>
+tp <player> <x> <y> <z>
+spawnpoint <player>
+setworldspawn
+setworldspawn <x> <y> <z>
+```
+
+Gameplay commands:
+
+```text
+gamemode survival <player>
+gamemode creative <player>
+difficulty peaceful
+difficulty easy
+difficulty normal
+difficulty hard
+effect clear <player>
+kill <player>
+```
+
+Item/XP commands:
+
+```text
+give <player> minecraft:diamond <amount>
+give <player> minecraft:bread 16
+xp add <player> 10 levels
+clear <player>
+```
+
+Good preset candidates:
+
+```text
+list
+save-all
+time set day
+weather clear
+say Server maintenance in 5 minutes
+whitelist reload
+gamerule keepInventory true
+```
+
+Commands to use carefully:
+
+```text
+stop
+kill <player>
+ban <player>
+clear <player>
+gamerule randomTickSpeed <number>
+```
+
+Before running commands that affect players or the world, run `save-all` first.
 
 ### server.properties editor
 
