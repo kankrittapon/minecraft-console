@@ -29,6 +29,7 @@ http://100.68.88.63:3100
 ### ฟังก์ชั่นที่มีตอนนี้
 
 - Login ด้วย Supabase Magic Link
+- Login ด้วย Supabase Email + Password เป็น fallback เมื่อ Magic Link ติด rate limit
 - ตรวจ allowlist ด้วย `NEXT_PUBLIC_ALLOWED_EMAILS`
 - Dashboard แสดง Minecraft server folders
 - แสดง container/status/health/port/image/world path
@@ -140,7 +141,9 @@ http://100.68.88.63:3100
 ```
 
 2. กรอกอีเมลที่อยู่ใน allowlist
-3. เปิด Magic Link จากอีเมล
+3. เลือกวิธี login:
+   - กดส่ง Magic Link แล้วเปิดลิงก์จากอีเมล
+   - หรือใส่ password แล้วกดเข้าสู่ระบบด้วยรหัสผ่าน
 4. หน้า Dashboard จะสแกน Minecraft servers ให้อัตโนมัติ
 5. ใช้ปุ่ม:
 
@@ -148,6 +151,8 @@ http://100.68.88.63:3100
 - `start` เพื่อเปิด container
 - `stop` เพื่อปิด container
 - `restart` เพื่อ restart container
+
+ถ้าเจอ `email rate limit exceeded` ให้ตั้ง password ให้ user ใน Supabase Dashboard แล้วใช้ช่อง password แทน Magic Link ได้ทันที
 
 ### Security notes
 
@@ -203,6 +208,7 @@ http://100.68.88.63:3100
 ### Current features
 
 - Supabase Magic Link login
+- Supabase Email + Password fallback when Magic Link is rate-limited
 - Email allowlist using `NEXT_PUBLIC_ALLOWED_EMAILS`
 - Server dashboard
 - Shows container name, status, health, ports, image, and world path
@@ -314,7 +320,9 @@ http://100.68.88.63:3100
 ```
 
 2. Enter an allowlisted email address
-3. Open the Magic Link from your email
+3. Choose a login method:
+   - Send a Magic Link and open it from your email
+   - Or enter a password and use password login
 4. The dashboard scans Minecraft servers automatically
 5. Use:
 
@@ -322,6 +330,8 @@ http://100.68.88.63:3100
 - `start` to start a container
 - `stop` to stop a container
 - `restart` to restart a container
+
+If you see `email rate limit exceeded`, set a password for the user in the Supabase Dashboard and use password login instead of Magic Link.
 
 ### Security notes
 

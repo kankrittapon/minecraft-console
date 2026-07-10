@@ -41,6 +41,7 @@ export default function MinecraftConsole() {
   const [authLoading, setAuthLoading] = useState(Boolean(supabase));
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   const [servers, setServers] = useState<MinecraftServer[]>([]);
@@ -121,7 +122,26 @@ export default function MinecraftConsole() {
       options: { emailRedirectTo: redirectTo },
     });
     setAuthBusy(false);
-    setAuthMessage(error ? error.message : "ส่งลิงก์เข้าสู่ระบบไปที่อีเมลแล้ว");
+    setAuthMessage(
+      error
+        ? error.message.toLowerCase().includes("rate limit")
+          ? "ส่งลิงก์ถี่เกินไปจาก Supabase Auth กรุณาใช้รหัสผ่านชั่วคราว หรือรอให้ rate limit รีเซ็ต"
+          : error.message
+        : "ส่งลิงก์เข้าสู่ระบบไปที่อีเมลแล้ว",
+    );
+  };
+
+  const signInWithPassword = async () => {
+    if (!supabase || !authEmail.trim() || !authPassword) return;
+
+    setAuthBusy(true);
+    setAuthMessage("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authEmail.trim(),
+      password: authPassword,
+    });
+    setAuthBusy(false);
+    setAuthMessage(error ? error.message : "เข้าสู่ระบบแล้ว");
   };
 
   const signOut = async () => {
@@ -191,10 +211,25 @@ NEXT_PUBLIC_SITE_URL=http://100.68.88.63:3100`}
               type="email"
               value={authEmail}
               onChange={(event) => setAuthEmail(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && sendMagicLink()}
+              onKeyDown={(event) => event.key === "Enter" && (authPassword ? signInWithPassword() : sendMagicLink())}
               placeholder="email"
               className="w-full border border-emerald-400/25 bg-black/60 px-4 py-3 text-sm outline-none focus:border-emerald-300"
             />
+            <input
+              type="password"
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && signInWithPassword()}
+              placeholder="password (optional)"
+              className="w-full border border-emerald-400/25 bg-black/60 px-4 py-3 text-sm outline-none focus:border-emerald-300"
+            />
+            <button
+              onClick={signInWithPassword}
+              disabled={authBusy || !authPassword}
+              className="w-full border border-emerald-300/30 px-5 py-3 text-sm font-black text-emerald-200 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {authBusy ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบด้วยรหัสผ่าน"}
+            </button>
             <button
               onClick={sendMagicLink}
               disabled={authBusy}
