@@ -36,6 +36,17 @@ interface ServerProperties {
   values: Record<string, string>;
 }
 
+const COMMAND_EXAMPLES = [
+  "gamerule keepInventory true",
+  "gamerule doFireTick false",
+  "gamerule mobGriefing false",
+  "gamerule doDaylightCycle false",
+  "gamerule doWeatherCycle false",
+  "difficulty normal",
+  "gamemode survival",
+  "say Server maintenance in 5 minutes",
+];
+
 const statusColor = (server: MinecraftServer) => {
   if (server.state === "running" && server.health === "healthy") return "bg-emerald-400";
   if (server.state === "running") return "bg-yellow-300";
@@ -242,6 +253,12 @@ export default function MinecraftConsole() {
   };
 
   const savePresets = async (nextPresets: CommandPreset[]) => {
+    const invalidPreset = nextPresets.find((preset) => !preset.label.trim() || !preset.command.trim() || preset.command.includes("\n"));
+    if (invalidPreset) {
+      setNotice("Preset ต้องมี Label/Command และ Command ต้องเป็นบรรทัดเดียว");
+      return;
+    }
+
     const response = await authedFetch("/api/presets", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -255,6 +272,20 @@ export default function MinecraftConsole() {
     } else {
       setNotice(data.error ?? "บันทึก presets ไม่สำเร็จ");
     }
+  };
+
+  const addPreset = async () => {
+    const label = newPreset.label.trim();
+    const command = newPreset.command.trim();
+    if (!label || !command) {
+      setNotice("ใส่ Label และ Command ก่อนกด Add");
+      return;
+    }
+    if (command.includes("\n")) {
+      setNotice("Command preset ต้องเป็นคำสั่งเดียวในบรรทัดเดียว");
+      return;
+    }
+    await savePresets([...presets, { id: crypto.randomUUID(), label, command }]);
   };
 
   const loadProperties = async (server: MinecraftServer) => {
@@ -480,14 +511,18 @@ NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100`}
                   ))}
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <input
+                  <textarea
                     value={commandInputs[server.id] ?? ""}
                     onChange={(event) => setCommandInputs((previous) => ({ ...previous, [server.id]: event.target.value }))}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") void sendCommand(server, commandInputs[server.id] ?? "");
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        void sendCommand(server, commandInputs[server.id] ?? "");
+                      }
                     }}
-                    placeholder="เช่น say Hello, list, save-all"
-                    className="min-w-0 flex-1 border border-emerald-300/20 bg-black/40 px-3 py-2 text-sm outline-none focus:border-emerald-300"
+                    rows={2}
+                    placeholder="เช่น gamerule keepInventory true, say Hello, list, save-all"
+                    className="min-w-0 flex-1 resize-none border border-emerald-300/20 bg-black/40 px-3 py-2 text-sm outline-none focus:border-emerald-300"
                   />
                   <button
                     onClick={() => void sendCommand(server, commandInputs[server.id] ?? "")}
@@ -496,6 +531,18 @@ NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100`}
                   >
                     Send
                   </button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {COMMAND_EXAMPLES.slice(0, 5).map((command) => (
+                    <button
+                      key={command}
+                      onClick={() => setCommandInputs((previous) => ({ ...previous, [server.id]: command }))}
+                      className="border border-emerald-300/15 px-2.5 py-1 text-[11px] font-bold text-stone-300 hover:border-emerald-300/35 hover:text-emerald-100"
+                      title={command}
+                    >
+                      {command}
+                    </button>
+                  ))}
                 </div>
                 {commandOutput[server.id] && (
                   <pre className="mt-3 max-h-32 overflow-auto border border-emerald-300/10 bg-black/45 p-3 text-xs text-stone-300">
@@ -616,16 +663,27 @@ NEXT_PUBLIC_SITE_URL=http://<TAILSCALE_IP>:3100`}
                 <input
                   value={newPreset.command}
                   onChange={(event) => setNewPreset((previous) => ({ ...previous, command: event.target.value }))}
-                  placeholder="Command"
+                  placeholder="เช่น gamerule keepInventory true"
                   className="border border-emerald-300/20 bg-black/40 px-3 py-2 text-sm"
                 />
                 <button
-                  onClick={() => void savePresets([...presets, { id: crypto.randomUUID(), ...newPreset }])}
+                  onClick={() => void addPreset()}
                   disabled={!newPreset.label.trim() || !newPreset.command.trim()}
                   className="bg-emerald-300 px-3 py-2 text-xs font-black text-black disabled:opacity-50"
                 >
                   Add
                 </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {COMMAND_EXAMPLES.map((command) => (
+                  <button
+                    key={command}
+                    onClick={() => setNewPreset((previous) => ({ ...previous, command }))}
+                    className="border border-emerald-300/15 px-2.5 py-1 text-[11px] font-bold text-stone-300 hover:border-emerald-300/35 hover:text-emerald-100"
+                  >
+                    {command}
+                  </button>
+                ))}
               </div>
               <button onClick={() => void savePresets(presets)} className="mt-2 bg-emerald-300 px-4 py-2 text-sm font-black text-black">
                 Save Presets

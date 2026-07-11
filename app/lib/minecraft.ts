@@ -198,6 +198,11 @@ const defaultPresets: CommandPreset[] = [
   { id: "save-all", label: "Save world", command: "save-all" },
   { id: "day", label: "Set day", command: "time set day" },
   { id: "clear-weather", label: "Clear weather", command: "weather clear" },
+  { id: "keep-inventory-on", label: "Keep inventory ON", command: "gamerule keepInventory true" },
+  { id: "keep-inventory-off", label: "Keep inventory OFF", command: "gamerule keepInventory false" },
+  { id: "mob-griefing-off", label: "Mob griefing OFF", command: "gamerule mobGriefing false" },
+  { id: "daylight-off", label: "Daylight cycle OFF", command: "gamerule doDaylightCycle false" },
+  { id: "weather-off", label: "Weather cycle OFF", command: "gamerule doWeatherCycle false" },
   { id: "maintenance", label: "Maintenance notice", command: "say Server maintenance in 5 minutes" },
 ];
 
@@ -206,7 +211,13 @@ export const readPresets = async () => {
   try {
     const raw = await readFile(PRESETS_PATH, "utf8");
     const parsed = JSON.parse(raw) as CommandPreset[];
-    return Array.isArray(parsed) ? parsed : defaultPresets;
+    if (!Array.isArray(parsed)) return defaultPresets;
+    const existingIds = new Set(parsed.map((preset) => preset.id));
+    const mergedPresets = [...parsed, ...defaultPresets.filter((preset) => !existingIds.has(preset.id))];
+    if (mergedPresets.length !== parsed.length) {
+      await writeFile(PRESETS_PATH, JSON.stringify(mergedPresets, null, 2));
+    }
+    return mergedPresets;
   } catch {
     await writeFile(PRESETS_PATH, JSON.stringify(defaultPresets, null, 2));
     return defaultPresets;
@@ -215,11 +226,18 @@ export const readPresets = async () => {
 
 export const savePresets = async (presets: CommandPreset[]) => {
   await ensureDataDir();
+  const invalidPreset = presets.find(
+    (preset) => !preset.label?.trim() || !SAFE_COMMAND_PATTERN.test(preset.command?.trim() ?? ""),
+  );
+  if (invalidPreset) {
+    throw new Error("Preset label and command are required. Command must be a single line and under 240 characters.");
+  }
+
   const safePresets = presets.map((preset) => ({
     id: preset.id || randomUUID(),
     label: preset.label.trim().slice(0, 80),
     command: preset.command.trim().slice(0, 240),
-  })).filter((preset) => preset.label && SAFE_COMMAND_PATTERN.test(preset.command));
+  }));
   await writeFile(PRESETS_PATH, JSON.stringify(safePresets, null, 2));
   return safePresets;
 };
